@@ -23,16 +23,29 @@ def check_for_redirect(history):
         pass
 
 
-def get_book_image(url, page_content):
-    soup = BeautifulSoup(page_content.text, 'lxml').find(id='content')
-    image_url = urljoin(url, soup.find('div', class_='bookimage').find('img')['src'])
-    return  image_url
+def get_book_image_url(url, soup):
+    return urljoin(url, soup.find('div', class_='bookimage').find('img')['src'])
 
 
-def get_book_name(page_content):
+
+def get_comments(soup):
+    comments = []
+    raw_comments = soup.find_all('div', class_='texts')
+    for raw_comment in raw_comments:
+        comments.append(raw_comment.find('span').text)
+
+
+def get_book_data(page_url):
+    page_content = requests.get(page_url)
+    page_content.raise_for_status()
     soup = BeautifulSoup(page_content.text, 'lxml').find(id='content')
     book_title, book_author = soup.find('h1').text.split('::')
-    return book_title.strip(), book_author.strip()
+    return {
+        'title': book_title.strip(),
+        'author': book_author.strip(),
+        'img_url': get_book_image_url(page_url, soup),
+        'comments': get_comments(soup)
+    }
 
 
 def download_image(url, book_title, book_author):
@@ -61,9 +74,13 @@ def main():
         page_response.raise_for_status()
 
         if not check_for_redirect(book_text.history):
-            book_title, book_author = get_book_name(page_response)
-            print(get_book_image(page_url, page_response))
-            download_image(get_book_image(page_url, page_response), book_title, book_author)
+            book_data = get_book_data(page_url)
+            book_title = book_data['title']
+            book_author = book_data['author']
+            book_image_url = book_data['img_url']
+            comments = book_data['comments']
+            print(comments)
+            download_image(book_image_url, book_title, book_author)
             filename = f'{BOOKDIR}/{book_author} - {book_title}.txt'
             with open(filename, 'wb') as file:
                 file.write(book_text.content)
