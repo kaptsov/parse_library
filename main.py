@@ -9,6 +9,7 @@ from requests import HTTPError
 BOOKDIR = 'books'
 IMAGEDIR = 'images'
 COMMENTSDIR = 'comments'
+BOOK_RANGE = 100
 
 
 def make_dirs():
@@ -29,6 +30,7 @@ def get_book_image_url(url, soup):
 
 
 def get_comments(soup):
+
     comments = []
     raw_comments = soup.find_all('div', class_='texts')
     for raw_comment in raw_comments:
@@ -36,7 +38,8 @@ def get_comments(soup):
     return comments
 
 
-def get_book_data(page_url):
+def parse_book_page(page_url):
+
     page_content = requests.get(page_url)
     page_content.raise_for_status()
     soup = BeautifulSoup(page_content.text, 'lxml').find(id='content')
@@ -64,14 +67,17 @@ def download_image(book_details):
             file.write(response.content)
 
 
-def download_comments(comments):
-    comment_filepath = f'{COMMENTSDIR}/{comments["author"]} - {comments["title"]}.txt'
-    for comment in comments['comments']:
+def download_comments(book_details):
+
+    comment_filepath = f'{COMMENTSDIR}/{book_details["author"]} - {book_details["title"]}.txt'
+    if book_details['comments']:
         with open(comment_filepath, 'wb') as file:
-            file.write(comment)
+            for comment in book_details['comments']:
+                file.write(f'{comment}\n'.encode())
 
 
 def download_book(book_details, book_text):
+
     book_filepath = f'{BOOKDIR}/{book_details["author"]} - {book_details["title"]}.txt'
     with open(book_filepath, 'wb') as file:
         file.write(book_text.content)
@@ -81,7 +87,7 @@ def main():
 
     make_dirs()
 
-    for book in range(10):
+    for book in range(BOOK_RANGE):
 
         url = f'https://tululu.org/txt.php?id={book}'
         page_url = f'https://tululu.org/b{book}/'
@@ -90,10 +96,11 @@ def main():
         book_text.raise_for_status()
 
         if not check_for_redirect(book_text.history):
-            book_data = get_book_data(page_url)
-            #download_comments(book_data)
-            download_image(book_data)
-            download_book(book_data, book_text)
+            book_details = parse_book_page(page_url)
+            if book_details['genre_id'] == '/l55/':
+                download_comments(book_details)
+                download_image(book_details)
+                download_book(book_details, book_text)
 
 
 if __name__ == "__main__":
