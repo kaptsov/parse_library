@@ -49,13 +49,13 @@ def get_book_data(page_url):
     }
 
 
-def download_image(bookdata):
+def download_image(book_details):
 
-    if bookdata['img_url'] != 'https://tululu.org/images/nopic.gif':
-        response = requests.get(bookdata['img_url'])
+    if book_details['img_url'] != 'https://tululu.org/images/nopic.gif':
+        response = requests.get(book_details['img_url'])
         response.raise_for_status()
-        file_type = urlsplit(bookdata['img_url']).path.split('.')[-1]
-        image_path = f'{IMAGEDIR}/{bookdata["author"]} - {bookdata["title"]}.{file_type}'
+        file_type = urlsplit(book_details['img_url']).path.split('.')[-1]
+        image_path = f'{IMAGEDIR}/{book_details["author"]} - {book_details["title"]}.{file_type}'
         with open(image_path, 'wb') as file:
             file.write(response.content)
 
@@ -67,8 +67,8 @@ def download_comments(comments):
             file.write(comment)
 
 
-def download_book(bookdata, book_text):
-    book_filepath = f'{BOOKDIR}/{bookdata["author"]} - {bookdata["title"]}.txt'
+def download_book(book_details, book_text):
+    book_filepath = f'{BOOKDIR}/{book_details["author"]} - {book_details["title"]}.txt'
     with open(book_filepath, 'wb') as file:
         file.write(book_text.content)
 
