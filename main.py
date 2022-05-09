@@ -1,20 +1,19 @@
 import os
-from urllib.parse import urljoin
-
-from bs4 import BeautifulSoup
+from urllib.parse import urljoin, urlsplit
+from pathlib import Path
 
 import requests
+from bs4 import BeautifulSoup
 from requests import HTTPError
 
-DIR = 'books'
+
+BOOKDIR = 'books'
+IMAGEDIR = 'images'
 
 
 def make_dirs():
-    try:
-        os.makedirs(DIR)
-    except FileExistsError:
-        # directory already exists
-        pass
+    Path(BOOKDIR).mkdir(exist_ok=True, parents=True)
+    Path(IMAGEDIR).mkdir(exist_ok=True, parents=True)
 
 
 def check_for_redirect(history):
@@ -36,6 +35,17 @@ def get_book_name(page_content):
     return book_title.strip(), book_author.strip()
 
 
+def download_image(url, book_title, book_author):
+
+    if url != 'https://tululu.org/images/nopic.gif':
+        response = requests.get(url)
+        response.raise_for_status()
+        file_type = urlsplit(url).path.split('.')[-1]
+        filename = f'{IMAGEDIR}/{book_author} - {book_title}.{file_type}'
+        with open(filename, 'wb') as file:
+            file.write(response.content)
+
+
 def main():
 
     make_dirs()
@@ -53,7 +63,8 @@ def main():
         if not check_for_redirect(book_text.history):
             book_title, book_author = get_book_name(page_response)
             print(get_book_image(page_url, page_response))
-            filename = f'{DIR}/{book_author} - {book_title}.txt'
+            download_image(get_book_image(page_url, page_response), book_title, book_author)
+            filename = f'{BOOKDIR}/{book_author} - {book_title}.txt'
             with open(filename, 'wb') as file:
                 file.write(book_text.content)
 
