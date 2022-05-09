@@ -23,6 +23,7 @@ def check_for_redirect(history):
 
 def main():
 
+    make_dirs()
     for book in range(10):
 
         url = f'https://tululu.org/txt.php?id=321{book}'
@@ -30,7 +31,7 @@ def main():
         response = requests.get(url)
         response.raise_for_status()
 
-        if check_for_redirect(response.history):
+        if not check_for_redirect(response.history):
             filename = f'{DIR}/text{book}.txt'
             with open(filename, 'wb') as file:
                 file.write(response.content)
