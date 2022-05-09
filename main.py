@@ -1,3 +1,4 @@
+import argparse
 from pathlib import Path
 from urllib.parse import urljoin, urlsplit
 
@@ -9,7 +10,6 @@ from requests import HTTPError
 BOOKDIR = 'books'
 IMAGEDIR = 'images'
 COMMENTSDIR = 'comments'
-BOOK_RANGE = 100
 
 
 def make_dirs():
@@ -84,10 +84,16 @@ def download_book(book_details, book_text):
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--start_id', default=1, type=int, help='С какого номера  ID начать скачивание?')
+    parser.add_argument('--end_id', default=10, type=int, help='Каким номером  ID закончить скачивание?')
+    args = parser.parse_args()
 
+    start_id = args.start_id
+    end_id = args.end_id + 1
     make_dirs()
 
-    for book in range(BOOK_RANGE):
+    for book in range(start_id, end_id):
 
         url = f'https://tululu.org/txt.php?id={book}'
         page_url = f'https://tululu.org/b{book}/'
@@ -97,10 +103,10 @@ def main():
 
         if not check_for_redirect(book_text.history):
             book_details = parse_book_page(page_url)
-            if book_details['genre_id'] == '/l55/':
-                download_comments(book_details)
-                download_image(book_details)
-                download_book(book_details, book_text)
+           # if book_details['genre_id'] == '/l55/':
+            download_comments(book_details)
+            download_image(book_details)
+            download_book(book_details, book_text)
 
 
 if __name__ == "__main__":
