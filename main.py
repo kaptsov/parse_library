@@ -1,6 +1,5 @@
-import os
-from urllib.parse import urljoin, urlsplit
 from pathlib import Path
+from urllib.parse import urljoin, urlsplit
 
 import requests
 from bs4 import BeautifulSoup
@@ -9,11 +8,13 @@ from requests import HTTPError
 
 BOOKDIR = 'books'
 IMAGEDIR = 'images'
+COMMENTSDIR = 'comments'
 
 
 def make_dirs():
     Path(BOOKDIR).mkdir(exist_ok=True, parents=True)
     Path(IMAGEDIR).mkdir(exist_ok=True, parents=True)
+    Path(COMMENTSDIR).mkdir(exist_ok=True, parents=True)
 
 
 def check_for_redirect(history):
@@ -34,6 +35,7 @@ def get_comments(soup):
         comments.append(raw_comment.find('span').text)
     return comments
 
+
 def get_book_data(page_url):
     page_content = requests.get(page_url)
     page_content.raise_for_status()
@@ -47,15 +49,28 @@ def get_book_data(page_url):
     }
 
 
-def download_image(url, book_title, book_author):
+def download_image(bookdata):
 
-    if url != 'https://tululu.org/images/nopic.gif':
-        response = requests.get(url)
+    if bookdata['img_url'] != 'https://tululu.org/images/nopic.gif':
+        response = requests.get(bookdata['img_url'])
         response.raise_for_status()
-        file_type = urlsplit(url).path.split('.')[-1]
-        filename = f'{IMAGEDIR}/{book_author} - {book_title}.{file_type}'
-        with open(filename, 'wb') as file:
+        file_type = urlsplit(bookdata['img_url']).path.split('.')[-1]
+        image_path = f'{IMAGEDIR}/{bookdata["author"]} - {bookdata["title"]}.{file_type}'
+        with open(image_path, 'wb') as file:
             file.write(response.content)
+
+
+def download_comments(comments):
+    comment_filepath = f'{COMMENTSDIR}/{comments["author"]} - {comments["title"]}.txt'
+    for comment in comments['comments']:
+        with open(comment_filepath, 'wb') as file:
+            file.write(comment)
+
+
+def download_book(bookdata, book_text):
+    book_filepath = f'{BOOKDIR}/{bookdata["author"]} - {bookdata["title"]}.txt'
+    with open(book_filepath, 'wb') as file:
+        file.write(book_text.content)
 
 
 def main():
@@ -69,20 +84,12 @@ def main():
 
         book_text = requests.get(url)
         book_text.raise_for_status()
-        page_response = requests.get(page_url)
-        page_response.raise_for_status()
 
         if not check_for_redirect(book_text.history):
             book_data = get_book_data(page_url)
-            book_title = book_data['title']
-            book_author = book_data['author']
-            book_image_url = book_data['img_url']
-            comments = book_data['comments']
-            print(comments)
-            download_image(book_image_url, book_title, book_author)
-            filename = f'{BOOKDIR}/{book_author} - {book_title}.txt'
-            with open(filename, 'wb') as file:
-                file.write(book_text.content)
+            #download_comments(book_data)
+            download_image(book_data)
+            download_book(book_data, book_text)
 
 
 if __name__ == "__main__":
