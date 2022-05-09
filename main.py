@@ -27,13 +27,12 @@ def get_book_image_url(url, soup):
     return urljoin(url, soup.find('div', class_='bookimage').find('img')['src'])
 
 
-
 def get_comments(soup):
     comments = []
     raw_comments = soup.find_all('div', class_='texts')
     for raw_comment in raw_comments:
         comments.append(raw_comment.find('span').text)
-
+    return comments
 
 def get_book_data(page_url):
     page_content = requests.get(page_url)
