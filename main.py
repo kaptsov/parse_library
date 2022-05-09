@@ -41,11 +41,15 @@ def get_book_data(page_url):
     page_content.raise_for_status()
     soup = BeautifulSoup(page_content.text, 'lxml').find(id='content')
     book_title, book_author = soup.find('h1').text.split('::')
+    book_genre_id = soup.find('span', class_='d_book').find('a').attrs['href']
+    book_genre = soup.find('span', class_='d_book').find('a').text
     return {
         'title': book_title.strip(),
         'author': book_author.strip(),
         'img_url': get_book_image_url(page_url, soup),
-        'comments': get_comments(soup)
+        'comments': get_comments(soup),
+        'genre_id': book_genre_id,
+        'genre': book_genre,
     }
 
 
