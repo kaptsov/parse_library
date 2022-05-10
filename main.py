@@ -1,11 +1,10 @@
 import argparse
-from time import sleep
 from pathlib import Path
 from urllib.parse import urljoin, urlsplit
 
 import requests
 from bs4 import BeautifulSoup
-from requests.exceptions import HTTPError, ConnectTimeout
+from requests.exceptions import HTTPError
 
 
 BOOKDIR = 'books'
