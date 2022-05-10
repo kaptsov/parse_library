@@ -1,10 +1,11 @@
 import argparse
+from time import sleep
 from pathlib import Path
 from urllib.parse import urljoin, urlsplit
 
 import requests
 from bs4 import BeautifulSoup
-from requests import HTTPError
+from requests.exceptions import HTTPError, ConnectTimeout
 
 
 BOOKDIR = 'books'
@@ -18,39 +19,29 @@ def make_dirs():
     Path(COMMENTSDIR).mkdir(exist_ok=True, parents=True)
 
 
-def check_for_redirect(history):
-    try:
-        return history
-    except HTTPError:
-        pass
+def get_soup(book_id):
 
-
-def get_book_image_url(url, soup):
-    return urljoin(url, soup.find('div', class_='bookimage').find('img')['src'])
-
-
-def get_comments(soup):
-
-    comments = []
-    raw_comments = soup.find_all('div', class_='texts')
-    for raw_comment in raw_comments:
-        comments.append(raw_comment.find('span').text)
-    return comments
-
-
-def parse_book_page(page_url):
-
+    page_url = f'https://tululu.org/b{book_id}/'
     page_content = requests.get(page_url)
     page_content.raise_for_status()
-    soup = BeautifulSoup(page_content.text, 'lxml').find(id='content')
+    if page_content.history:
+        raise HTTPError
+
+    return BeautifulSoup(page_content.text, 'lxml').find(id='content'), page_url
+
+
+def parse_book_page(soup, base_url):
+
     book_title, book_author = soup.find('h1').text.split('::')
     book_genre_id = soup.find('span', class_='d_book').find('a').attrs['href']
     book_genre = soup.find('span', class_='d_book').find('a').text
+    img_link = soup.find('div', class_='bookimage').find('img')['src']
+    comments = [comment_tagged.text for comment_tagged in soup.select('div.texts span')]
     return {
         'title': book_title.strip(),
         'author': book_author.strip(),
-        'img_url': get_book_image_url(page_url, soup),
-        'comments': get_comments(soup),
+        'img_url': urljoin(base_url, img_link),
+        'comments': comments,
         'genre_id': book_genre_id,
         'genre': book_genre,
     }
@@ -76,11 +67,11 @@ def download_comments(book_details):
                 file.write(f'{comment}\n'.encode())
 
 
-def download_book(book_details, book_text):
+def download_book(book_details, book_link):
 
     book_filepath = f'{BOOKDIR}/{book_details["author"]} - {book_details["title"]}.txt'
     with open(book_filepath, 'wb') as file:
-        file.write(book_text.content)
+        file.write(book_link.content)
 
 
 def main():
@@ -92,21 +83,20 @@ def main():
     start_id = args.start_id
     end_id = args.end_id + 1
     make_dirs()
+    url = 'https://tululu.org/txt.php'
 
-    for book in range(start_id, end_id):
+    for book_id in range(start_id, end_id):
 
-        url = f'https://tululu.org/txt.php?id={book}'
-        page_url = f'https://tululu.org/b{book}/'
-
-        book_text = requests.get(url)
-        book_text.raise_for_status()
-
-        if not check_for_redirect(book_text.history):
-            book_details = parse_book_page(page_url)
-           # if book_details['genre_id'] == '/l55/':
+        try:
+            book_link = requests.get(url, params={'id': book_id})
+            book_link.raise_for_status()
+            soup, base_url = get_soup(book_id)
+            book_details = parse_book_page(soup, base_url)
             download_comments(book_details)
             download_image(book_details)
-            download_book(book_details, book_text)
+            download_book(book_details, book_link)
+        except HTTPError:
+            print(f'Запрос с битым адресом. (ID={book_id})')
 
 
 if __name__ == "__main__":
