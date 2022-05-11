@@ -60,9 +60,9 @@ def download_image(author, title, img_url):
 
 def save_comments(author, title, comments):
 
-    comment_filepath = os.path.join(COMMENTSDIR, f'{author} - {title}.txt')
+    comments_filepath = os.path.join(COMMENTSDIR, f'{author} - {title}.txt')
     if comments:
-        with open(comment_filepath, 'wb') as file:
+        with open(comments_filepath, 'wb') as file:
             for comment in comments:
                 file.write(f'{comment}\n'.encode())
 
