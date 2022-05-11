@@ -90,10 +90,12 @@ def main():
     end_id = args.end_id + 1
     make_dirs()
     url = 'https://tululu.org/txt.php'
-    for book_id in tqdm(range(start_id, end_id),
+    loop_range = tqdm(range(start_id, end_id),
                         desc="Прогресс парсинга",
                         ncols=100,
-                        bar_format='{l_bar}{bar}|'):
+                        bar_format='{l_bar}{bar}|')
+
+    for book_id in loop_range:
 
         try:
             book_link = requests.get(url, params={'id': book_id})
