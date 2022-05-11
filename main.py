@@ -48,12 +48,12 @@ def parse_book_page(page_content, base_url):
     }
 
 
-def download_image(author, title, img_url):
+def download_image(img_url):
 
     response = requests.get(img_url)
     response.raise_for_status()
-    file_type = urlsplit(img_url).path.split('.')[-1]
-    image_path = os.path.join(IMAGEDIR, f'{author} - {title}.{file_type}')
+    filename = urlsplit(img_url).path.split('/')[-1]
+    image_path = os.path.join(IMAGEDIR, f'{filename}')
     with open(image_path, 'wb') as file:
         file.write(response.content)
 
@@ -99,7 +99,7 @@ def main():
             base_url, page_content = get_page_content(book_id)
             book_details = parse_book_page(page_content, base_url)
             save_comments(book_details['author'], book_details['title'], book_details['comments'])
-            download_image(book_details['author'], book_details['title'], book_details['img_url'])
+            download_image(book_details['img_url'])
             download_book(book_details['author'], book_details['title'], book_link)
         except HTTPError:
             tqdm.write(f'Запрос с битым адресом. (ID={book_id})', end="")
