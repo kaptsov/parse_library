@@ -13,6 +13,12 @@ IMAGEDIR = 'images'
 COMMENTSDIR = 'comments'
 
 
+def raise_for_redirect(request_history):
+
+    if request_history:
+        raise HTTPError
+
+
 def make_dirs():
     Path(BOOKDIR).mkdir(exist_ok=True, parents=True)
     Path(IMAGEDIR).mkdir(exist_ok=True, parents=True)
@@ -24,8 +30,7 @@ def get_page_content(book_id):
     page_url = f'https://tululu.org/b{book_id}/'
     page_content = requests.get(page_url)
     page_content.raise_for_status()
-    if page_content.history:
-        raise HTTPError
+    raise_for_redirect(page_content.history)
 
     return page_url, page_content
 
@@ -52,6 +57,7 @@ def download_image(img_url):
 
     response = requests.get(img_url)
     response.raise_for_status()
+    raise_for_redirect(response.history)
     filename = urlsplit(img_url).path.split('/')[-1]
     image_path = os.path.join(IMAGEDIR, f'{filename}')
     with open(image_path, 'wb') as file:
@@ -87,20 +93,25 @@ def main():
     make_dirs()
     url = 'https://tululu.org/txt.php'
     loop_range = tqdm(range(start_id, end_id),
-                        desc="Прогресс парсинга",
-                        ncols=100,
-                        bar_format='{l_bar}{bar}|')
+                      desc="Прогресс парсинга",
+                      ncols=100,
+                      bar_format='{l_bar}{bar}|')
 
     for book_id in loop_range:
 
         try:
             book_link = requests.get(url, params={'id': book_id})
             book_link.raise_for_status()
+            raise_for_redirect(book_link.history)
             base_url, page_content = get_page_content(book_id)
             book_details = parse_book_page(page_content, base_url)
-            save_comments(book_details['author'], book_details['title'], book_details['comments'])
+            save_comments(book_details['author'],
+                          book_details['title'],
+                          book_details['comments'])
+            download_book(book_details['author'],
+                          book_details['title'],
+                          book_link)
             download_image(book_details['img_url'])
-            download_book(book_details['author'], book_details['title'], book_link)
         except HTTPError:
             tqdm.write(f'Запрос с битым адресом. (ID={book_id})', end="")
 
