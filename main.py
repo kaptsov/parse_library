@@ -58,7 +58,7 @@ def download_image(author, title, img_url):
         file.write(response.content)
 
 
-def download_comments(author, title, comments):
+def save_comments(author, title, comments):
 
     comment_filepath = os.path.join(COMMENTSDIR, f'{author} - {title}.txt')
     if comments:
@@ -98,7 +98,7 @@ def main():
             book_link.raise_for_status()
             base_url, page_content = get_page_content(book_id)
             book_details = parse_book_page(page_content, base_url)
-            download_comments(book_details['author'], book_details['title'], book_details['comments'])
+            save_comments(book_details['author'], book_details['title'], book_details['comments'])
             download_image(book_details['author'], book_details['title'], book_details['img_url'])
             download_book(book_details['author'], book_details['title'], book_link)
         except HTTPError:
