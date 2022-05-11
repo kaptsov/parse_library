@@ -19,7 +19,7 @@ def make_dirs():
     Path(COMMENTSDIR).mkdir(exist_ok=True, parents=True)
 
 
-def get_soup(book_id):
+def get_page_content(book_id):
 
     page_url = f'https://tululu.org/b{book_id}/'
     page_content = requests.get(page_url)
@@ -27,12 +27,12 @@ def get_soup(book_id):
     if page_content.history:
         raise HTTPError
 
-    return BeautifulSoup(page_content.text, 'lxml').find(id='content'), \
-        page_url
+    return page_url, page_content
 
 
-def parse_book_page(soup, base_url):
+def parse_book_page(page_content, base_url):
 
+    soup = BeautifulSoup(page_content.text, 'lxml').find(id='content')
     book_title, book_author = soup.find('h1').text.split('::')
     img_link = soup.select_one('div.bookimage img').get('src')
     book_genre = [genre_tagged.text for genre_tagged
@@ -100,8 +100,8 @@ def main():
         try:
             book_link = requests.get(url, params={'id': book_id})
             book_link.raise_for_status()
-            soup, base_url = get_soup(book_id)
-            book_details = parse_book_page(soup, base_url)
+            base_url, page_content = get_page_content(book_id)
+            book_details = parse_book_page(page_content, base_url)
             download_comments(book_details)
             download_image(book_details)
             download_book(book_details, book_link)
