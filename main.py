@@ -34,9 +34,9 @@ def get_soup(book_id):
 def parse_book_page(soup, base_url):
 
     book_title, book_author = soup.find('h1').text.split('::')
-    book_genre_id = soup.find('span', class_='d_book').find('a').attrs['href']
-    book_genre = soup.find('span', class_='d_book').find('a').text
-    img_link = soup.find('div', class_='bookimage').find('img')['src']
+    img_link = soup.select_one('div.bookimage img').get('src')
+    book_genre = [genre_tagged.text for genre_tagged
+                  in soup.select('span.d_book a')]
     comments = [comment_tagged.text for comment_tagged
                 in soup.select('div.texts span')]
     return {
@@ -44,7 +44,6 @@ def parse_book_page(soup, base_url):
         'author': book_author.strip(),
         'img_url': urljoin(base_url, img_link),
         'comments': comments,
-        'genre_id': book_genre_id,
         'genre': book_genre,
     }
 
@@ -91,7 +90,6 @@ def main():
     end_id = args.end_id + 1
     make_dirs()
     url = 'https://tululu.org/txt.php'
-
     for book_id in tqdm(range(start_id, end_id),
                         desc="Прогресс парсинга",
                         ncols=100,
