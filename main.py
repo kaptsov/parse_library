@@ -48,32 +48,29 @@ def parse_book_page(page_content, base_url):
     }
 
 
-def download_image(book_details):
+def download_image(author, title, img_url):
 
-    if book_details['img_url'] != 'https://tululu.org/images/nopic.gif':
-        response = requests.get(book_details['img_url'])
+    if img_url != 'https://tululu.org/images/nopic.gif':
+        response = requests.get(img_url)
         response.raise_for_status()
-        file_type = urlsplit(book_details['img_url']).path.split('.')[-1]
-        image_path = f'{IMAGEDIR}/{book_details["author"]} - ' \
-            f'{book_details["title"]}.{file_type}'
+        file_type = urlsplit(img_url).path.split('.')[-1]
+        image_path = f'{IMAGEDIR}/{author} - {title}.{file_type}'
         with open(image_path, 'wb') as file:
             file.write(response.content)
 
 
-def download_comments(book_details):
+def download_comments(author, title, comments):
 
-    comment_filepath = f'{COMMENTSDIR}/{book_details["author"]} - ' \
-                       f'{book_details["title"]}.txt'
-    if book_details['comments']:
+    comment_filepath = f'{COMMENTSDIR}/{author} - {title}.txt'
+    if comments:
         with open(comment_filepath, 'wb') as file:
-            for comment in book_details['comments']:
+            for comment in comments:
                 file.write(f'{comment}\n'.encode())
 
 
-def download_book(book_details, book_link):
+def download_book(author, title, book_link):
 
-    book_filepath = f'{BOOKDIR}/{book_details["author"]} - ' \
-                    f'{book_details["title"]}.txt'
+    book_filepath = f'{BOOKDIR}/{author} - {title}.txt'
     with open(book_filepath, 'wb') as file:
         file.write(book_link.content)
 
@@ -102,9 +99,9 @@ def main():
             book_link.raise_for_status()
             base_url, page_content = get_page_content(book_id)
             book_details = parse_book_page(page_content, base_url)
-            download_comments(book_details)
-            download_image(book_details)
-            download_book(book_details, book_link)
+            download_comments(book_details['author'], book_details['title'], book_details['comments'])
+            download_image(book_details['author'], book_details['title'], book_details['img_url'])
+            download_book(book_details['author'], book_details['title'], book_link)
         except HTTPError:
             tqdm.write(f'Запрос с битым адресом. (ID={book_id})', end="")
 
