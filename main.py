@@ -1,12 +1,12 @@
 import argparse
+import os
 from pathlib import Path
 from urllib.parse import urljoin, urlsplit
 
 import requests
-from tqdm import tqdm
 from bs4 import BeautifulSoup
 from requests.exceptions import HTTPError
-
+from tqdm import tqdm
 
 BOOKDIR = 'books'
 IMAGEDIR = 'images'
@@ -54,14 +54,14 @@ def download_image(author, title, img_url):
         response = requests.get(img_url)
         response.raise_for_status()
         file_type = urlsplit(img_url).path.split('.')[-1]
-        image_path = f'{IMAGEDIR}/{author} - {title}.{file_type}'
+        image_path = os.path.join(IMAGEDIR, f'{author} - {title}.{file_type}')
         with open(image_path, 'wb') as file:
             file.write(response.content)
 
 
 def download_comments(author, title, comments):
 
-    comment_filepath = f'{COMMENTSDIR}/{author} - {title}.txt'
+    comment_filepath = os.path.join(COMMENTSDIR, f'{author} - {title}.txt')
     if comments:
         with open(comment_filepath, 'wb') as file:
             for comment in comments:
@@ -70,7 +70,7 @@ def download_comments(author, title, comments):
 
 def download_book(author, title, book_link):
 
-    book_filepath = f'{BOOKDIR}/{author} - {title}.txt'
+    book_filepath = os.path.join(BOOKDIR, f'{author} - {title}.txt')
     with open(book_filepath, 'wb') as file:
         file.write(book_link.content)
 
