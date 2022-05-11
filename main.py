@@ -50,13 +50,12 @@ def parse_book_page(page_content, base_url):
 
 def download_image(author, title, img_url):
 
-    if img_url != 'https://tululu.org/images/nopic.gif':
-        response = requests.get(img_url)
-        response.raise_for_status()
-        file_type = urlsplit(img_url).path.split('.')[-1]
-        image_path = os.path.join(IMAGEDIR, f'{author} - {title}.{file_type}')
-        with open(image_path, 'wb') as file:
-            file.write(response.content)
+    response = requests.get(img_url)
+    response.raise_for_status()
+    file_type = urlsplit(img_url).path.split('.')[-1]
+    image_path = os.path.join(IMAGEDIR, f'{author} - {title}.{file_type}')
+    with open(image_path, 'wb') as file:
+        file.write(response.content)
 
 
 def download_comments(author, title, comments):
