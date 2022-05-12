@@ -49,7 +49,7 @@ def download_image(img_url):
     response.raise_for_status()
     raise_for_redirect(response.history)
     filename = urlsplit(img_url).path.split('/')[-1]
-    image_path = os.path.join(IMAGEDIR, f'{filename}')
+    image_path = os.path.join(IMAGEDIR, filename)
     with open(image_path, 'wb') as file:
         file.write(response.content)
 
