@@ -5,6 +5,7 @@ from urllib.parse import urljoin, urlsplit
 
 import requests
 from bs4 import BeautifulSoup
+from pathvalidate import sanitize_filename
 from requests.exceptions import HTTPError
 from tqdm import tqdm
 
@@ -65,7 +66,8 @@ def save_comments(author, title, comments):
 
 def download_book(author, title, book_content):
 
-    book_filepath = os.path.join(BOOKDIR, f'{author} - {title}.txt')
+    book_title = f'{author} - {sanitize_filename(title)}.txt'
+    book_filepath = os.path.join(BOOKDIR, book_title)
     with open(book_filepath, 'wb') as file:
         file.write(book_content)
 
