@@ -7,7 +7,10 @@ from urllib.parse import urljoin, urlsplit
 import requests
 from bs4 import BeautifulSoup
 from pathvalidate import sanitize_filename
-from requests.exceptions import HTTPError, ConnectionError, ReadTimeout, Timeout
+from requests.exceptions import HTTPError,\
+                                ConnectionError,\
+                                ReadTimeout,\
+                                Timeout
 
 BOOKDIR = 'books'
 IMAGEDIR = 'images'
@@ -30,7 +33,7 @@ def make_dirs():
     Path(COMMENTSDIR).mkdir(exist_ok=True, parents=True)
 
 
-def parse_bookpage_response(page_content, base_url):
+def parse_bookpage(page_content, base_url):
 
     soup = BeautifulSoup(page_content, 'lxml').find(id='content')
     book_title, book_author = soup.find('h1').text.split('::')
@@ -103,7 +106,7 @@ def main():
             bookpage_content = get_content(bookpage_url, book_id)
             book_content = get_content(book_content_url, book_id)
 
-            book_details = parse_bookpage_response(bookpage_content, bookpage_url)
+            book_details = parse_bookpage(bookpage_content, bookpage_url)
             save_comments(book_details['author'],
                           book_details['title'],
                           book_details['comments'])
