@@ -46,7 +46,6 @@ def parse_bookpage_response(page_content, base_url):
 def download_image(img_url):
 
     response = requests.get(img_url)
-    response.raise_for_status()
     raise_for_redirect(response.history)
     filename = urlsplit(img_url).path.split('/')[-1]
     image_path = os.path.join(IMAGEDIR, filename)
@@ -57,10 +56,11 @@ def download_image(img_url):
 def save_comments(author, title, comments):
 
     comments_filepath = os.path.join(COMMENTSDIR, f'{author} - {title}.txt')
-    if comments:
-        with open(comments_filepath, 'wb') as file:
-            for comment in comments:
-                file.write(f'{comment}\n'.encode())
+    if not comments:
+        return
+    with open(comments_filepath, 'wb') as file:
+        for comment in comments:
+            file.write(f'{comment}\n'.encode())
 
 
 def download_book(author, title, book_content):
