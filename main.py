@@ -1,22 +1,26 @@
 import argparse
 import os
 from pathlib import Path
+from time import sleep
 from urllib.parse import urljoin, urlsplit
 
 import requests
 from bs4 import BeautifulSoup
 from pathvalidate import sanitize_filename
-from requests.exceptions import HTTPError
-from tqdm import tqdm
+from requests.exceptions import HTTPError, ConnectionError, ReadTimeout, Timeout
 
 BOOKDIR = 'books'
 IMAGEDIR = 'images'
 COMMENTSDIR = 'comments'
+TIMEOUT = 5
+CONNECTION_EXCEPTIONS = (ConnectionError, ReadTimeout, Timeout)
 
 
 def raise_for_redirect(request_history):
 
-    if request_history:
+    if not request_history:
+        return
+    if request_history[0].status_code in [301, 302]:
         raise HTTPError
 
 
@@ -46,7 +50,7 @@ def parse_bookpage_response(page_content, base_url):
 
 def download_image(img_url):
 
-    response = requests.get(img_url)
+    response = requests.get(img_url, timeout=TIMEOUT)
     raise_for_redirect(response.history)
     filename = urlsplit(img_url).path.split('/')[-1]
     image_path = os.path.join(IMAGEDIR, filename)
@@ -73,7 +77,7 @@ def download_book(author, title, book_content):
 
 
 def get_content(url, book_id):
-    response = requests.get(url, params={'id': book_id})
+    response = requests.get(url, params={'id': book_id}, timeout=TIMEOUT)
     raise_for_redirect(response.history)
     return response.content
 
@@ -87,15 +91,13 @@ def main():
     args = parser.parse_args()
 
     start_id = args.start_id
-    end_id = args.end_id + 1
+    end_id = args.end_id
     make_dirs()
     book_content_url = 'https://tululu.org/txt.php'
-    loop_range = tqdm(range(start_id, end_id),
-                      desc="Прогресс парсинга",
-                      ncols=100,
-                      bar_format='{l_bar}{bar}|')
 
-    for book_id in loop_range:
+    book_id = start_id
+    while book_id <= end_id:
+        success_iteration = True
         try:
             bookpage_url = f'https://tululu.org/b{book_id}/'
             bookpage_content = get_content(bookpage_url, book_id)
@@ -109,8 +111,16 @@ def main():
                           book_details['title'],
                           book_content)
             download_image(book_details['img_url'])
+            print(f'Скачана книга с  ID={book_id}')
         except HTTPError:
-            tqdm.write(f'Запрос с битым адресом: ID={book_id}', end="")
+            print(f'Запрос с битым адресом: ID={book_id}')
+        except CONNECTION_EXCEPTIONS:
+            print('Связь с интернетом прервалась, ожидание...')
+            sleep(5)
+            success_iteration = False
+
+        if success_iteration:
+            book_id += 1
 
 
 if __name__ == "__main__":
