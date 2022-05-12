@@ -25,16 +25,6 @@ def make_dirs():
     Path(COMMENTSDIR).mkdir(exist_ok=True, parents=True)
 
 
-def get_page_content(book_id):
-
-    page_url = f'https://tululu.org/b{book_id}/'
-    response = requests.get(page_url)
-    response.raise_for_status()
-    raise_for_redirect(response.history)
-
-    return page_url, response.text
-
-
 def parse_bookpage_response(page_content, base_url):
 
     soup = BeautifulSoup(page_content, 'lxml').find(id='content')
@@ -73,11 +63,17 @@ def save_comments(author, title, comments):
                 file.write(f'{comment}\n'.encode())
 
 
-def download_book(author, title, bookpage_response):
+def download_book(author, title, book_content):
 
     book_filepath = os.path.join(BOOKDIR, f'{author} - {title}.txt')
     with open(book_filepath, 'wb') as file:
-        file.write(bookpage_response.content)
+        file.write(book_content)
+
+
+def get_content(url, book_id):
+    response = requests.get(url, params={'id': book_id})
+    raise_for_redirect(response.history)
+    return response.content
 
 
 def main():
@@ -91,26 +87,25 @@ def main():
     start_id = args.start_id
     end_id = args.end_id + 1
     make_dirs()
-    url = 'https://tululu.org/txt.php'
+    book_content_url = 'https://tululu.org/txt.php'
     loop_range = tqdm(range(start_id, end_id),
                       desc="Прогресс парсинга",
                       ncols=100,
                       bar_format='{l_bar}{bar}|')
 
     for book_id in loop_range:
-
         try:
-            bookpage_response = requests.get(url, params={'id': book_id})
-            bookpage_response.raise_for_status()
-            raise_for_redirect(bookpage_response.history)
-            base_url, page_content = get_page_content(book_id)
-            book_details = parse_bookpage_response(page_content, base_url)
+            bookpage_url = f'https://tululu.org/b{book_id}/'
+            bookpage_content = get_content(bookpage_url, book_id)
+            book_content = get_content(book_content_url, book_id)
+
+            book_details = parse_bookpage_response(bookpage_content, bookpage_url)
             save_comments(book_details['author'],
                           book_details['title'],
                           book_details['comments'])
             download_book(book_details['author'],
                           book_details['title'],
-                          bookpage_response)
+                          book_content)
             download_image(book_details['img_url'])
         except HTTPError:
             tqdm.write(f'Запрос с битым адресом: ID={book_id}', end="")
