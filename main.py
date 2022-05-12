@@ -28,16 +28,16 @@ def make_dirs():
 def get_page_content(book_id):
 
     page_url = f'https://tululu.org/b{book_id}/'
-    page_content = requests.get(page_url)
-    page_content.raise_for_status()
-    raise_for_redirect(page_content.history)
+    response = requests.get(page_url)
+    response.raise_for_status()
+    raise_for_redirect(response.history)
 
-    return page_url, page_content
+    return page_url, response.text
 
 
-def parse_book_page(page_content, base_url):
+def parse_bookpage_response(page_content, base_url):
 
-    soup = BeautifulSoup(page_content.text, 'lxml').find(id='content')
+    soup = BeautifulSoup(page_content, 'lxml').find(id='content')
     book_title, book_author = soup.find('h1').text.split('::')
     img_link = soup.select_one('div.bookimage img').get('src')
     book_genre = [genre_tagged.text for genre_tagged
@@ -73,11 +73,11 @@ def save_comments(author, title, comments):
                 file.write(f'{comment}\n'.encode())
 
 
-def download_book(author, title, book_link):
+def download_book(author, title, bookpage_response):
 
     book_filepath = os.path.join(BOOKDIR, f'{author} - {title}.txt')
     with open(book_filepath, 'wb') as file:
-        file.write(book_link.content)
+        file.write(bookpage_response.content)
 
 
 def main():
@@ -100,20 +100,20 @@ def main():
     for book_id in loop_range:
 
         try:
-            book_link = requests.get(url, params={'id': book_id})
-            book_link.raise_for_status()
-            raise_for_redirect(book_link.history)
+            bookpage_response = requests.get(url, params={'id': book_id})
+            bookpage_response.raise_for_status()
+            raise_for_redirect(bookpage_response.history)
             base_url, page_content = get_page_content(book_id)
-            book_details = parse_book_page(page_content, base_url)
+            book_details = parse_bookpage_response(page_content, base_url)
             save_comments(book_details['author'],
                           book_details['title'],
                           book_details['comments'])
             download_book(book_details['author'],
                           book_details['title'],
-                          book_link)
+                          bookpage_response)
             download_image(book_details['img_url'])
         except HTTPError:
-            tqdm.write(f'Запрос с битым адресом. (ID={book_id})', end="")
+            tqdm.write(f'Запрос с битым адресом: ID={book_id}', end="")
 
 
 if __name__ == "__main__":
