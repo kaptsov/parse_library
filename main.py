@@ -21,13 +21,13 @@ CONNECTION_EXCEPTIONS = (ConnectionError, ReadTimeout, Timeout)
 
 def raise_for_redirect(request_history):
 
-    if not request_history:
-        return
-    if request_history[0].status_code in [301, 302]:
+    if request_history:
         raise HTTPError
 
 
+
 def make_dirs():
+
     Path(BOOKDIR).mkdir(exist_ok=True, parents=True)
     Path(IMAGEDIR).mkdir(exist_ok=True, parents=True)
     Path(COMMENTSDIR).mkdir(exist_ok=True, parents=True)
@@ -88,6 +88,7 @@ def download_book(author, title, book_id):
 
 
 def main():
+
     parser = argparse.ArgumentParser()
     parser.add_argument('--start_id', default=1, type=int,
                         help='С какого номера  ID начать скачивание?')
