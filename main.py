@@ -56,14 +56,15 @@ def download_image(img_url):
     response = requests.get(img_url, timeout=TIMEOUT)
     raise_for_redirect(response.history)
     filename = urlsplit(img_url).path.split('/')[-1]
-    image_path = os.path.join(IMAGEDIR, filename)
+    image_path = os.path.join(IMAGEDIR, sanitize_filename(filename))
     with open(image_path, 'wb') as file:
         file.write(response.content)
 
 
 def save_comments(author, title, comments):
 
-    comments_filepath = os.path.join(COMMENTSDIR, f'{author} - {title}.txt')
+    comments_filename = f'{author} - {sanitize_filename(title)}.txt'
+    comments_filepath = os.path.join(COMMENTSDIR, comments_filename)
     if not comments:
         return
     with open(comments_filepath, 'wb') as file:
