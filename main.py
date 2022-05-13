@@ -71,18 +71,20 @@ def save_comments(author, title, comments):
             file.write(f'{comment}\n'.encode())
 
 
-def download_book(author, title, book_content):
+def download_book(author, title, book_id):
+
+    book_content_url = 'https://tululu.org/txt.php'
+
+    response = requests.get(book_content_url,
+                            params={'id': book_id},
+                            timeout=TIMEOUT)
+    raise_for_redirect(response.history)
+    book_content = response.content
 
     book_title = f'{author} - {sanitize_filename(title)}.txt'
     book_filepath = os.path.join(BOOKDIR, book_title)
     with open(book_filepath, 'wb') as file:
         file.write(book_content)
-
-
-def get_content(url, book_id):
-    response = requests.get(url, params={'id': book_id}, timeout=TIMEOUT)
-    raise_for_redirect(response.history)
-    return response.content
 
 
 def main():
@@ -96,15 +98,15 @@ def main():
     start_id = args.start_id
     end_id = args.end_id
     make_dirs()
-    book_content_url = 'https://tululu.org/txt.php'
-
     book_id = start_id
+
     while book_id <= end_id:
         success_iteration = True
         try:
             bookpage_url = f'https://tululu.org/b{book_id}/'
-            bookpage_content = get_content(bookpage_url, book_id)
-            book_content = get_content(book_content_url, book_id)
+            response = requests.get(bookpage_url, timeout=TIMEOUT)
+            raise_for_redirect(response.history)
+            bookpage_content = response.content
 
             book_details = parse_bookpage(bookpage_content, bookpage_url)
             save_comments(book_details['author'],
@@ -112,7 +114,7 @@ def main():
                           book_details['comments'])
             download_book(book_details['author'],
                           book_details['title'],
-                          book_content)
+                          book_id)
             download_image(book_details['img_url'])
             print(f'Скачана книга с  ID={book_id}')
         except HTTPError:
