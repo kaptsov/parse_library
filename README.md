@@ -38,7 +38,7 @@ python main.py
 
 
 ```
-pyton main.py --start_page 10 --end_page 10
+pyton main.py --start_page 1 --end_page 10
 ```
 
 Следите за тем, чтобы начальный индекс был меньше конечного.
