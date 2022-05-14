@@ -1,17 +1,16 @@
 import argparse
+import hashlib
 import os
 from pathlib import Path
-from time import sleep
 from urllib.parse import urljoin, urlsplit
 
 import requests
 from bs4 import BeautifulSoup
 from pathvalidate import sanitize_filename
-from requests.exceptions import HTTPError,\
-                                ConnectionError,\
-                                ReadTimeout,\
-                                Timeout
-
+from requests.exceptions import HTTPError, \
+    ConnectionError, \
+    ReadTimeout, \
+    Timeout
 
 CONNECTION_EXCEPTIONS = (ConnectionError, ReadTimeout, Timeout)
 
@@ -35,7 +34,7 @@ def parse_bookpage(page_content, base_url):
     book_title, book_author = soup.find('h1').text.split('::')
     img_link = soup.select_one('div.bookimage img').get('src')
     book_genres = [genre_tagged.text for genre_tagged
-                  in soup.select('span.d_book a')]
+                   in soup.select('span.d_book a')]
     comments = [comment_tagged.text for comment_tagged
                 in soup.select('div.texts span')]
     return {
@@ -52,7 +51,10 @@ def download_image(img_url, path):
     response = requests.get(img_url, timeout=5)
     raise_for_redirect(response.history)
     filename = urlsplit(img_url).path.split('/')[-1]
-    image_path = os.path.join(path, sanitize_filename(filename))
+    hash = hashlib.md5(response.content).hexdigest()
+    full_filename = f'{hash}_{filename}'
+    image_path = os.path.join(path, sanitize_filename(full_filename))
+
     with open(image_path, 'wb') as file:
         file.write(response.content)
 
@@ -74,7 +76,7 @@ def download_book(author, title, book_id, path):
 
     response = requests.get(book_content_url,
                             params={'id': book_id},
-                            timeout=TIMEOUT)
+                            timeout=5)
     raise_for_redirect(response.history)
     book_content = response.content
 
