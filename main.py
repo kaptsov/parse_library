@@ -13,7 +13,6 @@ from requests.exceptions import HTTPError,\
                                 Timeout
 
 
-TIMEOUT = 5
 CONNECTION_EXCEPTIONS = (ConnectionError, ReadTimeout, Timeout)
 
 
@@ -23,11 +22,11 @@ def raise_for_redirect(request_history):
         raise HTTPError
 
 
-def make_dirs(books_dir, images_dir, comments_dir):
+def make_paths(books_path, images_path, comments_path):
 
-    Path(books_dir).mkdir(exist_ok=True, parents=True)
-    Path(images_dir).mkdir(exist_ok=True, parents=True)
-    Path(comments_dir).mkdir(exist_ok=True, parents=True)
+    Path(books_path).mkdir(exist_ok=True, parents=True)
+    Path(images_path).mkdir(exist_ok=True, parents=True)
+    Path(comments_path).mkdir(exist_ok=True, parents=True)
 
 
 def parse_bookpage(page_content, base_url):
@@ -44,24 +43,24 @@ def parse_bookpage(page_content, base_url):
         'author': book_author.strip(),
         'img_url': urljoin(base_url, img_link),
         'comments': comments,
-        'genre': book_genres,
+        'genres': book_genres,
     }
 
 
-def download_image(img_url, dir):
+def download_image(img_url, path):
 
-    response = requests.get(img_url, timeout=TIMEOUT)
+    response = requests.get(img_url, timeout=5)
     raise_for_redirect(response.history)
     filename = urlsplit(img_url).path.split('/')[-1]
-    image_path = os.path.join(dir, sanitize_filename(filename))
+    image_path = os.path.join(path, sanitize_filename(filename))
     with open(image_path, 'wb') as file:
         file.write(response.content)
 
 
-def save_comments(author, title, comments, dir):
+def save_comments(author, title, comments, path):
 
     comments_filename = f'{author} - {sanitize_filename(title)}.txt'
-    comments_filepath = os.path.join(dir, comments_filename)
+    comments_filepath = os.path.join(path, comments_filename)
     if not comments:
         return
     with open(comments_filepath, 'wb') as file:
@@ -69,7 +68,7 @@ def save_comments(author, title, comments, dir):
             file.write(f'{comment}\n'.encode())
 
 
-def download_book(author, title, book_id, dir):
+def download_book(author, title, book_id, path):
 
     book_content_url = 'https://tululu.org/txt.php'
 
@@ -80,7 +79,7 @@ def download_book(author, title, book_id, dir):
     book_content = response.content
 
     book_title = f'{author} - {sanitize_filename(title)}.txt'
-    book_filepath = os.path.join(dir, book_title)
+    book_filepath = os.path.join(path, book_title)
     with open(book_filepath, 'wb') as file:
         file.write(book_content)
 
@@ -94,21 +93,20 @@ def main():
                         help='Каким номером  ID закончить скачивание?')
     args = parser.parse_args()
 
-    books_dir = 'books'
-    images_dir = 'images'
-    comments_dir = 'comments'
+    books_path = 'books'
+    images_path = 'images'
+    comments_path = 'comments'
 
-    make_dirs(books_dir, images_dir, comments_dir)
+    make_paths(books_path, images_path, comments_path)
 
-    start_id = args.start_id
+    book_id = args.start_id
     end_id = args.end_id
-    book_id = start_id
 
     while book_id <= end_id:
         success_iteration = True
         try:
             bookpage_url = f'https://tululu.org/b{book_id}/'
-            response = requests.get(bookpage_url, timeout=TIMEOUT)
+            response = requests.get(bookpage_url, timeout=5)
             raise_for_redirect(response.history)
             bookpage_content = response.content
 
@@ -116,12 +114,12 @@ def main():
             save_comments(book_details['author'],
                           book_details['title'],
                           book_details['comments'],
-                          comments_dir)
+                          comments_path)
             download_book(book_details['author'],
                           book_details['title'],
                           book_id,
-                          books_dir)
-            download_image(book_details['img_url'], images_dir)
+                          books_path)
+            download_image(book_details['img_url'], images_path)
             print(f'Скачана книга с  ID={book_id}')
         except HTTPError:
             print(f'Запрос с битым адресом: ID={book_id}')
