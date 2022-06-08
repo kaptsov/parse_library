@@ -1,8 +1,10 @@
-from urllib.parse import urljoin
+import argparse
 import json
+from time import sleep
+from urllib.parse import urljoin
+
 import requests
 from bs4 import BeautifulSoup
-from time import sleep
 from requests.exceptions import HTTPError, \
     ConnectionError, \
     ReadTimeout, \
@@ -12,6 +14,19 @@ from main import raise_for_redirect, save_comments, download_book, parse_bookpag
 
 CONNECTION_EXCEPTIONS = (ConnectionError, ReadTimeout, Timeout)
 
+parser = argparse.ArgumentParser()
+parser.add_argument('--start_page', default=1, type=int,
+                    help='С какой страницы начать скачивание?')
+parser.add_argument('--end_page', default=10, type=int,
+                    help='Какой страницей закончить скачивание?')
+args = parser.parse_args()
+
+books_path = 'books'
+images_path = 'images'
+comments_path = 'comments'
+
+make_paths(books_path, images_path, comments_path)
+
 books_path = 'books'
 images_path = 'images'
 comments_path = 'comments'
@@ -19,7 +34,7 @@ comments_path = 'comments'
 make_paths(books_path, images_path, comments_path)
 
 
-for page in range(1, 2):
+for page in range(args.start_page, args.end_page):
 
     url = f'https://tululu.org/l55/{page}/'
     response = requests.get(url, timeout=5)
