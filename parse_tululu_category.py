@@ -25,14 +25,14 @@ for page in range(1, 2):
     response = requests.get(url, timeout=5)
     raise_for_redirect(response.history)
     bookpage_content = response.content
-    soup = BeautifulSoup(bookpage_content, 'lxml').find(id='content')
-    book_table = soup.find_all('table')
+    soup = BeautifulSoup(bookpage_content, 'lxml').select_one('#content')
+    book_table = soup.select('div.bookimage a')
     for book in book_table:
 
-        print(urljoin('https://tululu.org/', book.find('a').attrs['href']))
+        print(urljoin('https://tululu.org/', book.get('href')))
 
         try:
-            book_id = book.find('a').attrs['href']
+            book_id = book.get('href')
             book_num = book_id[2:-1]
             bookpage_url = urljoin('https://tululu.org/', book_id)
             response = requests.get(bookpage_url, timeout=5)
