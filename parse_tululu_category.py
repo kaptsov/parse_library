@@ -1,5 +1,6 @@
 import argparse
 import json
+import os.path
 from time import sleep
 from urllib.parse import urljoin
 
@@ -27,16 +28,10 @@ parser.add_argument('--skip_imgs', action='store_true', help='Не скачив�
 parser.add_argument('--skip_txt', action='store_true', help='Не скачивать книги')
 args = parser.parse_args()
 
-books_path = 'books'
-images_path = 'images'
-comments_path = 'comments'
 
-
-make_paths(books_path, images_path, comments_path)
-
-books_path = 'books'
-images_path = 'images'
-comments_path = 'comments'
+books_path = os.path.join(args.dest_folder, 'books')
+images_path = os.path.join(args.dest_folder, 'images')
+comments_path = os.path.join(args.dest_folder, 'comments')
 
 make_paths(books_path, images_path, comments_path)
 
@@ -63,7 +58,7 @@ for page in range(args.start_page, args.end_page):
 
             book_details = parse_bookpage(bookpage_content, bookpage_url)
 
-            with open(args.json_path, "a", encoding='utf8') as my_file:
+            with open(os.path.join(args.dest_folder, args.json_path), "a", encoding='utf8') as my_file:
                 json.dump(book_details, my_file, ensure_ascii=False, indent=4)
 
             save_comments(book_details['author'],
