@@ -2,6 +2,7 @@ import argparse
 import hashlib
 import os
 from pathlib import Path
+from time import sleep
 from urllib.parse import urljoin, urlsplit
 
 import requests
@@ -49,7 +50,9 @@ def parse_bookpage(page_content, base_url):
 def download_image(img_url, path):
 
     response = requests.get(img_url, timeout=5)
+    response.raise_for_status()
     raise_for_redirect(response.history)
+
     filename = urlsplit(img_url).path.split('/')[-1]
     hash = hashlib.md5(response.content).hexdigest()
     full_filename = f'{hash}_{filename}'
@@ -77,7 +80,9 @@ def download_book(author, title, book_id, path):
     response = requests.get(book_content_url,
                             params={'id': book_id},
                             timeout=5)
+    response.raise_for_status()
     raise_for_redirect(response.history)
+
     book_content = response.content
 
     book_title = f'{author} - {sanitize_filename(title)}.txt'
