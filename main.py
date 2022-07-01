@@ -7,7 +7,6 @@ from urllib.parse import urljoin, urlsplit
 
 import requests
 from bs4 import BeautifulSoup
-from pathvalidate import sanitize_filename
 from requests.exceptions import HTTPError, \
     ConnectionError, \
     ReadTimeout, \
@@ -38,33 +37,35 @@ def parse_bookpage(page_content, base_url):
                    in soup.select('span.d_book a')]
     comments = [comment_tagged.text for comment_tagged
                 in soup.select('div.texts span')]
+    hash = hashlib.md5(page_content).hexdigest()
+
     return {
         'title': book_title.strip(),
         'author': book_author.strip(),
         'img_url': urljoin(base_url, img_link),
         'comments': comments,
         'genres': book_genres,
+        'hash': hash
     }
 
 
-def download_image(img_url, path):
+def download_image(img_url, hash, path):
 
     response = requests.get(img_url, timeout=5)
     response.raise_for_status()
     raise_for_redirect(response.history)
 
     filename = urlsplit(img_url).path.split('/')[-1]
-    hash = hashlib.md5(response.content).hexdigest()
-    full_filename = f'{hash}_{filename}'
-    image_path = os.path.join(path, sanitize_filename(full_filename))
+    if filename != 'nopic.gif':
+        image_path = os.path.join(path, hash)
 
-    with open(image_path, 'wb') as file:
-        file.write(response.content)
+        with open(image_path, 'wb') as file:
+            file.write(response.content)
 
 
-def save_comments(author, title, comments, path):
+def save_comments(hash, comments, path):
 
-    comments_filename = f'{author} - {sanitize_filename(title)}.txt'
+    comments_filename = f'comment_{hash}.txt'
     comments_filepath = os.path.join(path, comments_filename)
     if not comments:
         return
@@ -73,7 +74,7 @@ def save_comments(author, title, comments, path):
             file.write(f'{comment}\n'.encode())
 
 
-def download_book(author, title, book_id, path):
+def download_book(hash, book_id, path):
 
     book_content_url = 'https://tululu.org/txt.php'
 
@@ -85,7 +86,7 @@ def download_book(author, title, book_id, path):
 
     book_content = response.content
 
-    book_title = f'{author} - {sanitize_filename(title)}.txt'
+    book_title = f'book_{hash}.txt'
     book_filepath = os.path.join(path, book_title)
     with open(book_filepath, 'wb') as file:
         file.write(book_content)
@@ -118,15 +119,15 @@ def main():
             bookpage_content = response.content
 
             book_details = parse_bookpage(bookpage_content, bookpage_url)
-            save_comments(book_details['author'],
-                          book_details['title'],
-                          book_details['comments'],
+            save_comments(book_details['hash'],
+                          book_id,
                           comments_path)
-            download_book(book_details['author'],
-                          book_details['title'],
+            download_book(book_details['hash'],
                           book_id,
                           books_path)
-            download_image(book_details['img_url'], images_path)
+            download_image(book_details['img_url'],
+                           book_details['hash'],
+                           images_path)
             print(f'Скачана книга с  ID={book_id}')
         except HTTPError:
             print(f'Запрос с битым адресом: ID={book_id}')

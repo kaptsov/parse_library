@@ -61,20 +61,21 @@ def main():
                 bookpage_content = response.content
                 book_details = parse_bookpage(bookpage_content, bookpage_url)
 
-                with open(os.path.join(args.dest_folder, args.json_path), "a", encoding='utf8') as json_file:
-                    json.dump(book_details, json_file, ensure_ascii=False, indent=4)
+                if book_details['img_url'] != 'https://tululu.org/images/nopic.gif':
+                    with open(os.path.join(args.dest_folder, args.json_path), "a", encoding='utf8', newline='') as json_file:
+                        json.dump(book_details, json_file, ensure_ascii=False, indent=4)
 
-                save_comments(book_details['author'],
-                              book_details['title'],
-                              book_details['comments'],
+                save_comments(book_details['hash'],
+                              book_num,
                               comments_path)
                 if not args.skip_txt:
-                    download_book(book_details['author'],
-                                  book_details['title'],
+                    download_book(book_details['hash'],
                                   book_num,
                                   books_path)
                 if not args.skip_imgs:
-                    download_image(book_details['img_url'], images_path)
+                    download_image(book_details['img_url'],
+                                   book_details['hash'],
+                                   images_path)
                 print(f'Скачана книга с  ID={book_num}')
             except HTTPError:
                 print(f'Запрос с битым адресом: ID={book_num}')
